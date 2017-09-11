@@ -2,24 +2,11 @@ Fence Executor
 ==============
 (This project is based on a fork of sgotti/go-fence project)
 
-Fence Executor is a golang fencing server pluggable with different fence providers.
-Fencing is the ability to perform power management actions to isolate a node.
+## General
+Fencing is the ability to perform power management actions to isolate a node in cluster.
 
-## Fence Providers
-
-At the moment there's one fencing provider that uses the fence agents provided by the redhat fence agents project (used by redhat cluster/pacemaker, oVirt and other projects).
-
-## Api
-
-POST https://localhost:7777/fence
-
+# Usage
+Fence Executor is a golang fencing executable that can be used to perform fence operation. The implementation is pluggable and supports providers and agents
 '''
-{
-    "script": "fence_apc_snmp"
-    "address": "fqdn.com"
-    "password": "password"
-    "username": "user"
-    "secure": False
-    "options": {"port": 21,}
-}
+go run main.go [fqdn] [username] [password] [plug(on\off)] [provider(redhat)] [agent(fence_apc_snmp)]
 '''

@@ -2,52 +2,14 @@ package main
 
 import (
 	"log"
-	"github.com/gorilla/mux"
-	"net/http"
-	"io/ioutil"
-	"io"
-	"encoding/json"
 	"time"
 	"fence-executor/fence"
 	"fence-executor/fence-providers"
+	"os"
+	"fmt"
 )
 
-
-type FenceParameters struct {
-	Address string
-	Username string
-	Password string
-	options map[string]string
-}
-
-
-func Index(w http.ResponseWriter, r *http.Request) {
-	var parameters FenceParameters
-	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
-	if err != nil {
-		panic(err)
-	}
-	if err := r.Body.Close(); err != nil {
-		panic(err)
-	}
-	if err := json.Unmarshal(body, &parameters); err != nil {
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		w.WriteHeader(422) // unprocessable entity
-		if err := json.NewEncoder(w).Encode(err); err != nil {
-			panic(err)
-		}
-	}
-
-	t := executeFence(parameters)
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(t); err != nil {
-		panic(err)
-	}
-}
-
-
-func executeFence(parameters FenceParameters) error {
+func executeFence(parameters map[string]string) error {
 	f := fence.New()
 	provider := fence_providers.New(nil)
 	f.RegisterProvider("redhat", provider)
@@ -57,12 +19,12 @@ func executeFence(parameters FenceParameters) error {
 		return err
 	}
 
-	ac := fence.NewAgentConfig("redhat", "fence_apc_snmp")
+	ac := fence.NewAgentConfig(parameters["provider"], parameters["agent"])
 
-	ac.SetParameter("--ip", parameters.Address)
-	ac.SetParameter("--username", parameters.Username)
-	ac.SetParameter("--password", parameters.Password)
-	ac.SetParameter("--plug", parameters.options["plug"])
+	ac.SetParameter("--ip", parameters["address"])
+	ac.SetParameter("--username", parameters["username"])
+	ac.SetParameter("--password", parameters["password"])
+	ac.SetParameter("--plug", parameters["plug"])
 
 	err = f.Run(ac, fence.Status, 10*time.Second)
 	if err != nil {
@@ -75,7 +37,20 @@ func executeFence(parameters FenceParameters) error {
 
 
 func main() {
-	router := mux.NewRouter().StrictSlash(true)
-	router.HandleFunc("/", Index)
-	log.Fatal(http.ListenAndServe(":7777", router))
+	var args = os.Args[1:]
+	var parameters map[string]string
+	parameters = make(map[string]string)
+	fmt.Println(args)
+
+	parameters["address"] = args[0]
+	parameters["username"] = args[1]
+	parameters["password"] = args[2]
+	parameters["plug"] = args[3]
+	parameters["agent"] = args[4]
+	parameters["provider"] = args[5]
+
+	fmt.Println(parameters)
+	executeFence(parameters)
+
+	fmt.Println("Done")
 }
