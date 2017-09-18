@@ -1,4 +1,4 @@
-package fence_providers
+package providers
 
 import (
 	"bufio"
@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 	"fence-executor/utils"
-	"fence-executor/fence"
 	"os"
 )
 
@@ -27,11 +26,11 @@ type RHAgentProviderConfig struct {
 
 type RHAgent struct {
 	Command string
-	*fence.Agent
+	*utils.Agent
 }
 
 func newRHAgent() *RHAgent {
-	return &RHAgent{Agent: fence.NewAgent()}
+	return &RHAgent{Agent: utils.NewAgent()}
 }
 
 const (
@@ -40,7 +39,7 @@ const (
 
 var defaultConfig = &RHAgentProviderConfig{Glob: defaultGlob}
 
-func New(config *RHAgentProviderConfig) *RHAgentProvider {
+func CreateRHProvider(config *RHAgentProviderConfig) *RHAgentProvider {
 	p := &RHAgentProvider{agents: make(map[string]*RHAgent)}
 	if config != nil {
 		p.config = config
@@ -106,7 +105,7 @@ func (r *RHResourceAgent) ToResourceAgent() (*RHAgent, error) {
 	for _, mdp := range r.Parameters {
 		// If "action" parameter ignore it and set agent's DefaultAction
 		if mdp.Name == "action" && mdp.Content.Default != "" {
-			fa, err := fence.StringToAction(mdp.Content.Default)
+			fa, err := utils.StringToAction(mdp.Content.Default)
 			if err != nil {
 				// Ignore bad default action
 			} else {
@@ -124,10 +123,10 @@ func (r *RHResourceAgent) ToResourceAgent() (*RHAgent, error) {
 			continue
 		}
 		// TODO. All the metadatas reports unique = "0" but I think they should be unique...
-		p := &fence.Parameter{Name: mdp.Name, Unique: mdp.Unique, Required: mdp.Required, Desc: mdp.ShortDesc}
+		p := &utils.Parameter{Name: mdp.Name, Unique: mdp.Unique, Required: mdp.Required, Desc: mdp.ShortDesc}
 		switch mdp.Content.ContentType {
 		case "boolean":
-			p.ContentType = fence.Boolean
+			p.ContentType = utils.Boolean
 			if mdp.Content.Default != "" {
 				value, err := strconv.ParseBool(mdp.Content.Default)
 				if err != nil {
@@ -136,13 +135,13 @@ func (r *RHResourceAgent) ToResourceAgent() (*RHAgent, error) {
 				p.Default = value
 			}
 		case "string":
-			p.ContentType = fence.String
+			p.ContentType = utils.String
 			if mdp.Content.Default != "" {
 				p.Default = mdp.Content.Default
 			}
 		case "select":
 			p.HasOptions = true
-			p.ContentType = fence.String
+			p.ContentType = utils.String
 			if mdp.Content.Default != "" {
 				p.Default = mdp.Content.Default
 			}
@@ -157,13 +156,13 @@ func (r *RHResourceAgent) ToResourceAgent() (*RHAgent, error) {
 	for _, mda := range r.Actions {
 		if mda.Name == "on" {
 			if mda.Automatic == "1" {
-				a.UnfenceAction = fence.On
+				a.UnfenceAction = utils.On
 			}
 			if mda.OnTarget == "1" {
 				a.UnfenceOnTarget = true
 			}
 		}
-		fa, err := fence.StringToAction(mda.Name)
+		fa, err := utils.StringToAction(mda.Name)
 		if err != nil {
 			// Ignore unknown action
 			continue
@@ -241,15 +240,15 @@ func (p *RHAgentProvider) getRHAgent(name string) (*RHAgent, error) {
 	return a, nil
 }
 
-func (p *RHAgentProvider) GetAgents() (fence.Agents, error) {
-	fagents := make(fence.Agents)
+func (p *RHAgentProvider) GetAgents() (utils.Agents, error) {
+	fagents := make(utils.Agents)
 	for _, a := range p.agents {
 		fagents[a.Name] = a.Agent
 	}
 	return fagents, nil
 }
 
-func (p *RHAgentProvider) GetAgent(name string) (*fence.Agent, error) {
+func (p *RHAgentProvider) GetAgent(name string) (*utils.Agent, error) {
 	a, ok := p.agents[name]
 	if !ok {
 		return nil, fmt.Errorf("Unknown agent: %s", name)
@@ -257,7 +256,7 @@ func (p *RHAgentProvider) GetAgent(name string) (*fence.Agent, error) {
 	return a.Agent, nil
 }
 
-func (p *RHAgentProvider) run(ac *fence.AgentConfig, action string, timeout time.Duration) ([]byte, error) {
+func (p *RHAgentProvider) run(ac *utils.AgentConfig, action string, timeout time.Duration) ([]byte, error) {
 	var (
 		cmdOut []byte
 		err    error
@@ -287,50 +286,50 @@ func (p *RHAgentProvider) run(ac *fence.AgentConfig, action string, timeout time
 	return cmdOut, nil
 }
 
-func (p *RHAgentProvider) Status(ac *fence.AgentConfig, timeout time.Duration) (fence.DeviceStatus, error) {
+func (p *RHAgentProvider) Status(ac *utils.AgentConfig, timeout time.Duration) (utils.DeviceStatus, error) {
 	_, err := p.run(ac, "status", timeout)
 	if err != nil {
 		if _, ok := err.(*exec.ExitError); ok {
 			// Process exited with exit code != 0
-			return fence.Ko, nil
+			return utils.Ko, nil
 		}
-		return fence.Ko, err
+		return utils.Ko, err
 	}
 
-	return fence.Ok, nil
+	return utils.Ok, nil
 }
 
-func (p *RHAgentProvider) Monitor(ac *fence.AgentConfig, timeout time.Duration) (fence.DeviceStatus, error) {
+func (p *RHAgentProvider) Monitor(ac *utils.AgentConfig, timeout time.Duration) (utils.DeviceStatus, error) {
 	_, err := p.run(ac, "monitor", timeout)
 	if err != nil {
 		if _, ok := err.(*exec.ExitError); ok {
 			// Process exited with exit code != 0
-			return fence.Ko, nil
+			return utils.Ko, nil
 		}
-		return fence.Ko, err
+		return utils.Ko, err
 	}
 
-	return fence.Ok, nil
+	return utils.Ok, nil
 }
 
-func (p *RHAgentProvider) List(ac *fence.AgentConfig, timeout time.Duration) (fence.PortList, error) {
+func (p *RHAgentProvider) List(ac *utils.AgentConfig, timeout time.Duration) (utils.PortList, error) {
 	out, err := p.run(ac, "list", timeout)
 	if err != nil {
 		return nil, err
 	}
 
-	portList := make(fence.PortList, 0)
+	portList := make(utils.PortList, 0)
 	reader := bufio.NewReader(bytes.NewReader(out))
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
-		var portName fence.PortName
+		var portName utils.PortName
 		line := scanner.Text() // Println will add back the final '\n'
 		split := strings.Split(line, ",")
 		switch len(split) {
 		case 1:
-			portName = fence.PortName{Name: split[0]}
+			portName = utils.PortName{Name: split[0]}
 		case 2:
-			portName = fence.PortName{Name: split[0], Alias: split[1]}
+			portName = utils.PortName{Name: split[0], Alias: split[1]}
 		default:
 			return nil, fmt.Errorf("Wrong list format")
 		}
@@ -340,12 +339,12 @@ func (p *RHAgentProvider) List(ac *fence.AgentConfig, timeout time.Duration) (fe
 	return portList, nil
 }
 
-func (p *RHAgentProvider) Run(ac *fence.AgentConfig, action fence.Action, timeout time.Duration) error {
+func (p *RHAgentProvider) Run(ac *utils.AgentConfig, action utils.Action, timeout time.Duration) error {
 	// Specify action only if action !- fence.None,
 	// elsewhere the agent will run the default action
 	var actionstr string
-	if action != fence.None {
-		actionstr = fence.ActionToString(action)
+	if action != utils.None {
+		actionstr = utils.ActionToString(action)
 	}
 
 	_, err := p.run(ac, actionstr, timeout)

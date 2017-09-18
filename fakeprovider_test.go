@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"time"
-	"fence-executor/fence-providers"
+	"fence-executor/providers"
 	"fence-executor/fence"
 )
 

@@ -3,15 +3,15 @@ package main
 import (
 	"log"
 	"time"
-	"fence-executor/fence"
-	"fence-executor/fence-providers"
 	"os"
 	"fmt"
+	"fence-executor/providers"
+	"fence-executor/utils"
 )
 
 func executeFence(parameters map[string]string) error {
-	f := fence.New()
-	provider := fence_providers.New(nil)
+	f := utils.CreateNewFence()
+	provider := providers.CreateRHProvider(nil)
 	f.RegisterProvider("redhat", provider)
 	err := f.LoadAgents(10 * time.Second)
 	if err != nil {
@@ -19,14 +19,14 @@ func executeFence(parameters map[string]string) error {
 		return err
 	}
 
-	ac := fence.NewAgentConfig(parameters["provider"], parameters["agent"])
+	ac := utils.NewAgentConfig(parameters["provider"], parameters["agent"])
 
 	ac.SetParameter("--ip", parameters["address"])
 	ac.SetParameter("--username", parameters["username"])
 	ac.SetParameter("--password", parameters["password"])
 	ac.SetParameter("--plug", parameters["plug"])
 
-	err = f.Run(ac, fence.Status, 10*time.Second)
+	err = f.Run(ac, utils.Status, 10*time.Second)
 	if err != nil {
 		log.Print("error: ", err)
 		return err

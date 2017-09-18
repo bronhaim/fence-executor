@@ -5,7 +5,7 @@ import (
 	"testing"
 	"reflect"
 	"fence-executor/fence"
-	"fence-executor/fence-providers"
+	"fence-executor/providers"
 )
 
 func TestVerifyAgentConfig(t *testing.T) {

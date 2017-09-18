@@ -1,4 +1,4 @@
-package fence
+package utils
 
 import (
 	"fmt"
@@ -55,7 +55,7 @@ type Fence struct {
 	providers map[string]FenceProvider
 }
 
-func New() *Fence {
+func CreateNewFence() *Fence {
 	return &Fence{providers: make(map[string]FenceProvider)}
 }
 

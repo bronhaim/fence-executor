@@ -1,4 +1,4 @@
-package fence
+package utils
 
 type ContentType uint8
 
