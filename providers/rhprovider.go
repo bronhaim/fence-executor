@@ -17,7 +17,7 @@ import (
 
 type RHAgentProvider struct {
 	config *RHAgentProviderConfig
-	agents map[string]*RHAgent
+	Agents map[string]*RHAgent
 }
 
 type RHAgentProviderConfig struct {
@@ -40,7 +40,7 @@ const (
 var defaultConfig = &RHAgentProviderConfig{Glob: defaultGlob}
 
 func CreateRHProvider(config *RHAgentProviderConfig) *RHAgentProvider {
-	p := &RHAgentProvider{agents: make(map[string]*RHAgent)}
+	p := &RHAgentProvider{Agents: make(map[string]*RHAgent)}
 	if config != nil {
 		p.config = config
 	} else {
@@ -173,7 +173,7 @@ func (r *RHResourceAgent) ToResourceAgent() (*RHAgent, error) {
 }
 
 func (p *RHAgentProvider) LoadAgents(timeout time.Duration) error {
-	p.agents = make(map[string]*RHAgent)
+	p.Agents = make(map[string]*RHAgent)
 
 	files, err := filepath.Glob(p.config.Glob)
 	if err != nil {
@@ -194,7 +194,7 @@ func (p *RHAgentProvider) LoadAgents(timeout time.Duration) error {
 		if err != nil {
 			continue
 		}
-		p.agents[a.Name] = a
+		p.Agents[a.Name] = a
 	}
 	return nil
 }
@@ -233,7 +233,7 @@ func (p *RHAgentProvider) LoadAgent(file string, timeout time.Duration) (*RHAgen
 }
 
 func (p *RHAgentProvider) getRHAgent(name string) (*RHAgent, error) {
-	a, ok := p.agents[name]
+	a, ok := p.Agents[name]
 	if !ok {
 		return nil, fmt.Errorf("Unknown agent: %s", name)
 	}
@@ -242,14 +242,14 @@ func (p *RHAgentProvider) getRHAgent(name string) (*RHAgent, error) {
 
 func (p *RHAgentProvider) GetAgents() (utils.Agents, error) {
 	fagents := make(utils.Agents)
-	for _, a := range p.agents {
+	for _, a := range p.Agents {
 		fagents[a.Name] = a.Agent
 	}
 	return fagents, nil
 }
 
 func (p *RHAgentProvider) GetAgent(name string) (*utils.Agent, error) {
-	a, ok := p.agents[name]
+	a, ok := p.Agents[name]
 	if !ok {
 		return nil, fmt.Errorf("Unknown agent: %s", name)
 	}

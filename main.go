@@ -24,7 +24,7 @@ func executeFence(parameters map[string]string) error {
 	ac.SetParameter("--ip", parameters["address"])
 	ac.SetParameter("--username", parameters["username"])
 	ac.SetParameter("--password", parameters["password"])
-	ac.SetParameter("--plug", parameters["plug"])
+	ac.SetParameter("--plug", parameters["port"])
 
 	err = f.Run(ac, utils.Status, 10*time.Second)
 	if err != nil {
@@ -45,9 +45,9 @@ func main() {
 	parameters["address"] = args[0]
 	parameters["username"] = args[1]
 	parameters["password"] = args[2]
-	parameters["plug"] = args[3]
-	parameters["agent"] = args[4]
-	parameters["provider"] = args[5]
+	parameters["agent"] = args[3]
+	parameters["provider"] = args[4]
+	parameters["port"] = args[5]
 
 	fmt.Println(parameters)
 	executeFence(parameters)
